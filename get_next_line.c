@@ -11,7 +11,6 @@
 /* ************************************************************************** */
 
 #include "get_next_line.h"
-#include <stdio.h>
 
 void	copy_str(size_t len, size_t start, char *str, char const *s)
 {
