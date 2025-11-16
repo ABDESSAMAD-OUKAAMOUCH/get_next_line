@@ -12,7 +12,7 @@
 
 #include "get_next_line.h"
 
-void	copy_str(size_t len, size_t start, char *str, char const *s)
+static void	copy_str(size_t len, size_t start, char *str, char const *s)
 {
 	size_t	i;
 
@@ -25,7 +25,7 @@ void	copy_str(size_t len, size_t start, char *str, char const *s)
 	str[i] = '\0';
 }
 
-char	*ft_substr(char const *s, size_t start, size_t len)
+static char	*ft_substr(char const *s, size_t start, size_t len)
 {
 	char	*str;
 	size_t	ls;
@@ -50,7 +50,7 @@ char	*ft_substr(char const *s, size_t start, size_t len)
 	return (str);
 }
 
-char	*get_line(char **cache)
+static char	*get_line(char **cache)
 {
 	char	*line;
 	size_t	i;
@@ -75,7 +75,7 @@ char	*get_line(char **cache)
 	return (line);
 }
 
-char	*check_bytes(char **cache, int bytes_read)
+static char	*check_bytes(char **cache, ssize_t bytes_read)
 {
 	char	*line;
 
@@ -86,22 +86,18 @@ char	*check_bytes(char **cache, int bytes_read)
 		*cache = NULL;
 		return (NULL);
 	}
-	if (bytes_read == 0)
-	{
-		if (*cache == NULL)
-			return (NULL);
-		line = *cache;
-		*cache = NULL;
-		return (line);
-	}
-	return (NULL);
+	if (*cache == NULL)
+		return (NULL);
+	line = *cache;
+	*cache = NULL;
+	return (line);
 }
 
 char	*get_next_line(int fd)
 {
 	char		*buff;
 	static char	*cache;
-	int			bytes_read;
+	ssize_t		bytes_read;
 
 	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (NULL);
