@@ -12,111 +12,105 @@
 
 #include "get_next_line.h"
 
-static void	copy_str(size_t len, size_t start, char *str, char const *s)
+static char	*get_line(char *cache)
 {
+	char	*line;
+	size_t	total;
 	size_t	i;
 
+	if (cache[0] == '\0')
+		return (NULL);
 	i = 0;
-	while (i < len && s[start + i])
-	{
-		str[i] = s[start + i];
+	while (cache[i] && cache[i] != '\n')
 		i++;
-	}
-	str[i] = '\0';
+	total = i + 1 + (cache[i] == '\n');
+	line = malloc(total);
+	if (!line)
+		return (NULL);
+	ft_strlcpy(line, cache, total);
+	return (line);
 }
 
-static char	*ft_substr(char const *s, size_t start, size_t len)
+static char	*check_cache(char *cache, char *buff, ssize_t bytes_read)
 {
-	char	*str;
-	size_t	ls;
+	if (bytes_read == 0)
+		return (cache);
+	buff[bytes_read] = '\0';
+	if (cache == NULL)
+		cache = ft_strdup(buff);
+	else
+		cache = ft_strjoin(cache, buff);
+	return (cache);
+}
 
-	if (s == NULL)
+static char	*read_to_cache(int fd, char *cache)
+{
+	char	*buff;
+	ssize_t	bytes_read;
+
+	buff = malloc(BUFFER_SIZE + 1);
+	if (!buff)
 		return (NULL);
-	ls = ft_strlen(s);
-	if (start >= ls)
+	bytes_read = 1;
+	while (ft_strchr(cache, '\n') == NULL && bytes_read > 0)
 	{
-		str = malloc(1);
-		if (str == NULL)
+		bytes_read = read(fd, buff, BUFFER_SIZE);
+		if (bytes_read < 0)
+		{
+			free(buff);
+			free(cache);
 			return (NULL);
-		str[0] = '\0';
-		return (str);
+		}
+		cache = check_cache(cache, buff, bytes_read);
+		if (cache == NULL)
+		{
+			free(buff);
+			return (NULL);
+		}
 	}
-	if (len > ls - start)
-		len = ls - start;
-	str = malloc(len + 1);
-	if (str == NULL)
-		return (NULL);
-	copy_str(len, start, str, s);
-	return (str);
+	free(buff);
+	return (cache);
 }
 
-static char	*get_line(char **cache)
+static char	*after_the_line(char *cache)
 {
-	char	*line;
-	size_t	i;
-	size_t	is_bs;
-	char	*tmp;
+	char	*after_line;
+	int		i;
 
-	if (cache == NULL || *cache == NULL)
-		return (NULL);
 	i = 0;
-	while ((*cache)[i] && (*cache)[i] != '\n')
+	while (cache[i] && cache[i] != '\n')
 		i++;
-	is_bs = (*cache)[i] == '\n';
-	line = ft_substr(*cache, 0, i + is_bs);
-	tmp = ft_substr(*cache, i + is_bs, ft_strlen(*cache) - i - is_bs);
-	free(*cache);
-	if (tmp != NULL && tmp[0] == '\0')
+	if (cache[i] == '\0')
 	{
-		free(tmp);
-		tmp = NULL;
-	}
-	*cache = tmp;
-	return (line);
-}
-
-static char	*check_bytes(char **cache, ssize_t bytes_read)
-{
-	char	*line;
-
-	if (bytes_read < 0)
-	{
-		if (*cache != NULL)
-			free(*cache);
-		*cache = NULL;
+		free(cache);
 		return (NULL);
 	}
-	if (*cache == NULL)
-		return (NULL);
-	line = *cache;
-	*cache = NULL;
-	return (line);
+	after_line = ft_strdup(cache + i + 1);
+	free(cache);
+	return (after_line);
 }
 
 char	*get_next_line(int fd)
 {
-	char		*buff;
+	char		*line;
 	static char	*cache;
-	ssize_t		bytes_read;
 
-	if (fd < 0 || BUFFER_SIZE <= 0)
-		return (NULL);
-	while (cache == NULL || ft_strchr(cache, '\n') == NULL)
+	if (fd < 0 || BUFFER_SIZE <= 0 || read(fd, 0, 0) < 0)
 	{
-		buff = malloc(BUFFER_SIZE + 1);
-		if (!buff)
-			return (NULL);
-		bytes_read = read(fd, buff, BUFFER_SIZE);
-		if (bytes_read <= 0)
-		{
-			free(buff);
-			return (check_bytes(&cache, bytes_read));
-		}
-		buff[bytes_read] = '\0';
-		cache = ft_strjoin(cache, buff);
-		free(buff);
-		if (cache == NULL)
-			return (NULL);
+		free(cache);
+		cache = NULL;
+		return (NULL);
 	}
-	return (get_line(&cache));
+	cache = read_to_cache(fd, cache);
+	if (cache == NULL)
+		return (NULL);
+	line = get_line(cache);
+	if (!line)
+	{
+		free(cache);
+		cache = NULL;
+		return (NULL);
+	}
+	cache = after_the_line(cache);
+	return (line);
 }
