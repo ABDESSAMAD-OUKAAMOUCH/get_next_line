@@ -50,7 +50,7 @@ static char	*read_to_cache(int fd, char *cache)
 
 	buff = malloc(BUFFER_SIZE + 1);
 	if (!buff)
-		return (NULL);
+		return (free(cache), NULL);
 	bytes_read = 1;
 	while (ft_strchr(cache, '\n') == NULL && bytes_read > 0)
 	{
@@ -72,7 +72,7 @@ static char	*read_to_cache(int fd, char *cache)
 	return (cache);
 }
 
-static char	*after_the_line(char *cache)
+static char	*remove_line_cache(char *cache)
 {
 	char	*after_line;
 	int		i;
@@ -111,6 +111,6 @@ char	*get_next_line(int fd)
 		cache = NULL;
 		return (NULL);
 	}
-	cache = after_the_line(cache);
+	cache = remove_line_cache(cache);
 	return (line);
 }
