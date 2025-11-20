@@ -12,6 +12,32 @@
 
 #include "get_next_line_bonus.h"
 
+t_list	*get_remove_node(t_list **lst, int fd, int is_rm)
+{
+	t_list	*tm;
+	t_list	*prv;
+
+	tm = *lst;
+	prv = NULL;
+	while (tm && tm->fd != fd)
+	{
+		prv = tm;
+		tm = tm->next;
+	}
+	if (tm == NULL && is_rm == 0)
+	{
+		tm = malloc(sizeof(t_list));
+		if (!tm)
+			return (NULL);
+		return (tm->fd = fd, tm->cache = NULL, tm->next = *lst, *lst = tm, tm);
+	}
+	if (tm && is_rm && prv == NULL)
+		return (*lst = tm->next, free(tm->cache), free(tm), NULL);
+	if (tm && is_rm && prv != NULL)
+		return (prv->next = tm->next, free(tm->cache), free(tm), NULL);
+	return (tm);
+}
+
 static char	*get_line(char *cache)
 {
 	char	*line;
@@ -31,18 +57,6 @@ static char	*get_line(char *cache)
 	return (line);
 }
 
-static char	*check_cache(char *cache, char *buff, ssize_t bytes_read)
-{
-	if (bytes_read == 0)
-		return (cache);
-	buff[bytes_read] = '\0';
-	if (cache == NULL)
-		cache = ft_strdup(buff);
-	else
-		cache = ft_strjoin(cache, buff);
-	return (cache);
-}
-
 static char	*read_to_cache(int fd, char *cache)
 {
 	char	*buff;
@@ -56,17 +70,16 @@ static char	*read_to_cache(int fd, char *cache)
 	{
 		bytes_read = read(fd, buff, BUFFER_SIZE);
 		if (bytes_read < 0)
-		{
-			free(buff);
-			free(cache);
-			return (NULL);
-		}
-		cache = check_cache(cache, buff, bytes_read);
+			return (free(buff), free(cache), NULL);
+		if (bytes_read == 0)
+			return (free(buff), cache);
+		buff[bytes_read] = '\0';
 		if (cache == NULL)
-		{
-			free(buff);
-			return (NULL);
-		}
+			cache = ft_strdup(buff);
+		else
+			cache = ft_strjoin(cache, buff);
+		if (cache == NULL)
+			return (free(buff), NULL);
 	}
 	free(buff);
 	return (cache);
@@ -92,25 +105,29 @@ static char	*remove_line_cache(char *cache)
 
 char	*get_next_line(int fd)
 {
-	char		*line;
-	static char	*cache[1024];
+	char			*line;
+	static t_list	*lst;
+	t_list			*node;
 
 	if (fd < 0 || BUFFER_SIZE <= 0 || read(fd, 0, 0) < 0)
+		return (NULL);
+	node = get_remove_node(&lst, fd, 0);
+	if (!node)
+		return (NULL);
+	node->cache = read_to_cache(fd, node->cache);
+	if (node->cache == NULL)
 	{
-		free(cache[fd]);
-		cache[fd] = NULL;
+		get_remove_node(&lst, fd, 1);
 		return (NULL);
 	}
-	cache[fd] = read_to_cache(fd, cache[fd]);
-	if (cache[fd] == NULL)
-		return (NULL);
-	line = get_line(cache[fd]);
+	line = get_line(node->cache);
 	if (!line)
 	{
-		free(cache[fd]);
-		cache[fd] = NULL;
+		get_remove_node(&lst, fd, 1);
 		return (NULL);
 	}
-	cache[fd] = remove_line_cache(cache[fd]);
+	node->cache = remove_line_cache(node->cache);
+	if (!node->cache)
+		get_remove_node(&lst, fd, 1);
 	return (line);
 }

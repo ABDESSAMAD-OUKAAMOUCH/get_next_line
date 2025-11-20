@@ -6,7 +6,7 @@
 /*   By: aoukaamo <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/19 18:49:22 by aoukaamo          #+#    #+#             */
-/*   Updated: 2025/11/19 18:49:36 by aoukaamo         ###   ########.fr       */
+/*   Updated: 2025/11/20 18:37:50 by aoukaamo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,13 @@
 # ifndef BUFFER_SIZE
 #  define BUFFER_SIZE 42
 # endif
+
+typedef struct s_list
+{
+	int				fd;
+	char			*cache;
+	struct s_list	*next;
+}	t_list;
 
 char	*get_next_line(int fd);
 char	*ft_strchr(char *s, int c);
