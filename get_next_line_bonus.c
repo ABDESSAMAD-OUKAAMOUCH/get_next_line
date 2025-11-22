@@ -12,7 +12,7 @@
 
 #include "get_next_line_bonus.h"
 
-t_list	*get_remove_node(t_list **lst, int fd, int is_rm)
+static t_list	*get_remove_node(t_list **lst, int fd, int is_rm)
 {
 	t_list	*tm;
 	t_list	*prv;
@@ -110,7 +110,7 @@ char	*get_next_line(int fd)
 	t_list			*node;
 
 	if (fd < 0 || BUFFER_SIZE <= 0 || read(fd, 0, 0) < 0)
-		return (NULL);
+		return (get_remove_node(&lst, fd, 1), NULL);
 	node = get_remove_node(&lst, fd, 0);
 	if (!node)
 		return (NULL);
